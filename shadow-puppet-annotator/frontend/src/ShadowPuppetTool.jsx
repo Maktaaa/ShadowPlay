@@ -1,5 +1,5 @@
-// Shadow Puppet Tool – 已修复 scaleRatio 放置位置并整理 box 传递逻辑
-import React, { useRef, useState, useEffect } from 'react';
+// Shadow Puppet Tool – 修复红色掩码透明度与轮廓描边逻辑
+import React, { useRef, useState } from 'react';
 
 export default function ShadowPuppetTool() {
   const canvasRef = useRef(null);
@@ -18,7 +18,6 @@ export default function ShadowPuppetTool() {
     canvas.height = img.height * scale;
     canvas.scaleRatio = scale;
     const ctx = canvas.getContext('2d');
-    console.log('🎯 Drawing image on canvas:', canvas.width, canvas.height);
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
     setImage(img);
   };
@@ -34,10 +33,7 @@ export default function ShadowPuppetTool() {
     const data = await res.json();
     setImageId(data.image_id);
     const img = new Image();
-    img.onload = () => {
-      console.log('✅ Image loaded:', img.width, img.height);
-      resizeCanvasToFit(img);
-    };
+    img.onload = () => resizeCanvasToFit(img);
     img.onerror = () => console.error('❌ Failed to load image');
     img.src = `http://localhost:5000/uploads/${data.image_id}.png`;
   };
@@ -115,16 +111,39 @@ export default function ShadowPuppetTool() {
           data[i] = 255;
           data[i + 1] = 0;
           data[i + 2] = 0;
-          data[i + 3] = 100;
+          data[i + 3] = 180;
         } else {
           data[i + 3] = 0;
         }
       }
       maskCtx.putImageData(imageData, 0, 0);
       ctx.drawImage(maskCanvas, 0, 0);
-      ctx.strokeStyle = 'black';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(box[0], box[1], box[2] - box[0], box[3] - box[1]);
+
+      // 黄色描边
+      const edgeCanvas = document.createElement('canvas');
+      edgeCanvas.width = canvas.width;
+      edgeCanvas.height = canvas.height;
+      const edgeCtx = edgeCanvas.getContext('2d');
+      edgeCtx.drawImage(maskCanvas, 0, 0);
+      const edgeData = edgeCtx.getImageData(0, 0, canvas.width, canvas.height).data;
+
+      ctx.strokeStyle = 'yellow';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (let y = 1; y < canvas.height - 1; y++) {
+        for (let x = 1; x < canvas.width - 1; x++) {
+          const i = (y * canvas.width + x) * 4;
+          const current = edgeData[i];
+          const left = edgeData[i - 4];
+          const right = edgeData[i + 4];
+          const top = edgeData[i - canvas.width * 4];
+          const bottom = edgeData[i + canvas.width * 4];
+          if (current > 0 && (left === 0 || right === 0 || top === 0 || bottom === 0)) {
+            ctx.rect(x, y, 1, 1);
+          }
+        }
+      }
+      ctx.stroke();
     };
     maskImg.src = URL.createObjectURL(blob);
   };
@@ -148,5 +167,3 @@ export default function ShadowPuppetTool() {
     </div>
   );
 }
-
-
