@@ -1,0 +1,20 @@
+# Web 后端
+flask
+flask-cors
+
+# 图像与数据处理
+numpy
+Pillow
+opencv-python
+torch
+torchvision
+
+# SAM2.1 模型
+# 注意：需要本地安装 sam2，并且它不是 PyPI 包
+# 建议在项目部署时用：pip install -e D:/sam2
+# 所以这里只列出提醒，不自动 pip 安装
+
+# sam2 @ git+https://github.com/facebookresearch/sam2.git  # ⚠ 不再直接使用此行
+
+# 可选调试工具
+ipython
